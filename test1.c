@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <assert.h>
 #define NUM_THREADS 20
-#define NUM_INC 400
+#define NUM_INC 100
 
 int count = 0;
 

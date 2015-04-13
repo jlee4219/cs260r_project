@@ -3,17 +3,24 @@
 #include "pin.H"
 
 FILE * trace;
+PIN_LOCK lock;
 
 // Print a memory read record
-VOID RecordMemRead(VOID * ip, VOID * addr)
+VOID RecordMemRead(VOID * ip, VOID * addr, THREADID threadid)
 {
+    PIN_GetLock(&lock, threadid+1);
     fprintf(trace,"%p: R %p\n", ip, addr);
+    fflush(trace);
+    PIN_ReleaseLock(&lock);
 }
 
 // Print a memory write record
-VOID RecordMemWrite(VOID * ip, VOID * addr)
+VOID RecordMemWrite(VOID * ip, VOID * addr, THREADID threadid)
 {
+    PIN_GetLock(&lock, threadid+1);
     fprintf(trace,"%p: W %p\n", ip, addr);
+    fflush(trace);
+    PIN_ReleaseLock(&lock);
 }
 
 // Pin calls this function every time a new img is loaded
@@ -46,6 +53,7 @@ VOID ImageLoad(IMG img, VOID *v)
                                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemRead,
                                 IARG_INST_PTR,
                                 IARG_MEMORYOP_EA, memOp,
+                                IARG_THREAD_ID,
                                 IARG_END);
                         }
                         // Note that in some architectures a single memory operand can be 
@@ -57,6 +65,7 @@ VOID ImageLoad(IMG img, VOID *v)
                                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemWrite,
                                 IARG_INST_PTR,
                                 IARG_MEMORYOP_EA, memOp,
+                                IARG_THREAD_ID,
                                 IARG_END);
                         }
                     }
@@ -87,6 +96,7 @@ INT32 Usage()
 
 int main(int argc, char * argv[])
 {
+    PIN_InitLock(&lock);
     // prepare for image instrumentation mode
     PIN_InitSymbols();
 
