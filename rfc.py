@@ -40,9 +40,14 @@ def run():
       pos += 1
     else:
       neg += 1
+    if predictions[i] == 1:
+      output = "Failure: "
+      output += str(decoding[X_test[i,-2]]) + " read after "
+      output += str(decoding[X_test[i,-1]]) + " wrote."
+      print output
     if predictions[i] != y_test[i]:
       if predictions[i] == 1:
-        print "Failure! ", [decoding[ins] for ins in X_test[i,:]]
+        # print "Failure! ", [decoding[ins] for ins in X_test[i,:]]
         false_pos += 1
       else:
         false_neg += 1
