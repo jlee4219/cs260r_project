@@ -3,25 +3,34 @@ import csv
 import numpy as np
 from sklearn.externals import joblib
 import cPickle
+import sys
+
+if len(sys.argv) < 2:
+  sys.exit()
+csvfile = sys.argv[1]
+if len(sys.argv) > 2:
+  pklfile = sys.argv[2]
+else:
+  pklfile = "decoding.pkl"
 
 data = []
 targets = []
 
 def get_data(filename):
-  with open(filename, 'rb') as csvfile:
-    reader = csv.reader(csvfile, delimiter=',')
+  with open(filename, 'rb') as fp:
+    reader = csv.reader(fp, delimiter=',')
     for row in reader:
       row = map(int, row)
       targets.append(row[0])
       data.append(row[1:])
-  with open('decoding.pkl', 'rb') as fp:
+  with open(pklfile, 'rb') as fp:
     decoding = cPickle.load(fp)
   return decoding
 
 def run():
-  decoding = get_data('results.csv')
+  decoding = get_data(csvfile)
   count = len(targets)
-  split = float(1)/3
+  split = float(4)/8
   X_train = np.array(data[:int(count*split)])
   y_train = np.array(targets[:int(count*split)])
   X_test = np.array(data[int(count*split):])
@@ -47,7 +56,6 @@ def run():
       print output
     if predictions[i] != y_test[i]:
       if predictions[i] == 1:
-        # print "Failure! ", [decoding[ins] for ins in X_test[i,:]]
         false_pos += 1
       else:
         false_neg += 1

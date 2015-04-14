@@ -1,9 +1,23 @@
 import csv
 import cPickle as pickle
+import sys
+
+if len(sys.argv) < 2:
+  print "Please specify a directory."
+  sys.exit()
 
 data = []
 encoding = {}
 val = 0
+dir = sys.argv[1]
+if len(sys.argv) > 2:
+  csvfile = sys.argv[2] + ".csv"
+else:
+  csvfile = "dependencies.csv"
+if len(sys.argv) > 3: 
+  pklfile = sys.argv[3] + ".pkl"
+else:
+  pklfile = "decoding.pkl"
 
 for i in range(100):
   print i
@@ -11,7 +25,7 @@ for i in range(100):
   d = {}
   dependencies = []
   failed = False
-  for line in open('./data/test' + str(i) + '.out', 'r'):
+  for line in open('./'+dir+'/trace' + str(i) + '.out', 'r'):
     # instruction pointer, R/W, location
     ins = line.split()
     if len(ins) == 1 and ins[0] == '1':
@@ -28,6 +42,7 @@ for i in range(100):
         d[ea] = index
       else:
         if ea in d:
+          # read, write
           dependencies.append([index, d[ea]])
 
   # get the last 5 dependencies
@@ -43,11 +58,9 @@ decoding = {}
 for k, v in encoding.iteritems():
   decoding[v] = k
 
-with open('results.csv', 'wb') as fp:
+with open(csvfile, 'wb') as fp:
   a = csv.writer(fp, delimiter=',')
   a.writerows(data)
 
-with open('decoding.pkl', 'wb') as fp:
+with open(pklfile, 'wb') as fp:
   pickle.dump(decoding, fp)
-
-print decoding
