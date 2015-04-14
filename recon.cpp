@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <iostream>
 #include "pin.H"
 // #include <unordered_map>
@@ -10,16 +11,19 @@
 #define LCL_W 1
 #define RMT_R 2
 #define RMT_W 3
-#define TABLE_SIZE 16777216
+// #define TABLE_SIZE 16777216
+#define TABLE_SIZE 1000
 
 // class for a node in context-aware communication graph
 class NODE{
 public:
+    unsigned long ip;
     int context;
     int threadid;
     int time_stamp;
     NODE* next;
-    NODE(int t_id, int stamp){
+    NODE(unsigned long ins_p, int t_id, int stamp){
+        ip = ins_p;
         context = 0;
         threadid = t_id;
         time_stamp = stamp;
@@ -31,36 +35,72 @@ class HashEntry {
 public:
     NODE last_writer;
     NODE* sharers_list;
-    void update_writer(int t_id, int stamp) {
+
+    void update_writer(unsigned long ins_p, int t_id, int stamp) {
+        last_writer.ip = ins_p;
         last_writer.threadid = t_id;
         last_writer.time_stamp = stamp;
+        sharers_list = NULL;
     }
-    HashEntry(int t_id, int stamp): last_writer(t_id, stamp) { }
+
+    void add_reader(unsigned long ins_p, int t_id, int stamp) {
+        NODE* reader = new NODE(ins_p, t_id, stamp);
+        reader->next = sharers_list;
+        sharers_list = reader;
+    }
+
+    bool has_read(int t_id){
+        NODE* cur = sharers_list;
+        while(cur != NULL){
+	    if (cur->threadid == t_id)
+	        return true;
+            cur = cur->next;
+        }
+        return false;
+    }
+
+  HashEntry(unsigned long ins_p, int t_id, int stamp): last_writer(ins_p, t_id, stamp), sharers_list(NULL) { }
 };
 
 class HashMap {
 private:
     HashEntry **table;
+    ofstream trace_stream;
 public:
     HashMap() {
         table = new HashEntry*[TABLE_SIZE];
         for (int i = 0; i < TABLE_SIZE; ++i)
             table[i] = NULL;
+        trace_stream.open("read_write.out");
     }
 
-    HashEntry* get(long key){
+    HashEntry* get(unsigned long key){
         return table[key % TABLE_SIZE];
     }
 
-    void put(long key, HashEntry* entry){
+    void put(unsigned long key, HashEntry* entry){
         table[key % TABLE_SIZE] = entry;
     }
 
-    void print(){
+    void print_table(){
         for (int i = 0; i < TABLE_SIZE; ++i){
             if (table[i] != NULL)
-                cout << (table[i]->last_writer).threadid << endl;
+	        print_edges(table[i]);
         }
+    }
+
+    void print_edges(HashEntry* entry){
+        trace_stream << (entry->last_writer).ip << " " << (entry->last_writer).threadid;
+        NODE* cur = entry->sharers_list;
+	while (cur != NULL){
+	    trace_stream << " " << cur->ip << " " << cur->threadid;
+	    cur = cur -> next;
+        }
+        trace_stream << endl;
+    }
+
+    void close_stream(){
+      trace_stream.close();
     }
 
     ~HashMap() {
@@ -74,7 +114,6 @@ public:
 
 // FILE * trace;
 PIN_LOCK thread_lock;
-ofstream trace_stream;
 HashMap* metadata = new HashMap();
 // unordered_map <string, NODE> metadata;
 
@@ -90,22 +129,34 @@ HashMap* metadata = new HashMap();
 // Print a memory read record
 VOID RecordMemRead(VOID * ip, VOID * addr, THREADID threadid)
 {
-    PIN_GetLock(&thread_lock, threadid+1);
-    // fprintf(trace,"%ld R %ld, %d\n", (long)ip, (long)addr, (int)threadid);
-    // fflush(trace);
-    // fprintf("%s", IPToString(ip));
-    
-    PIN_ReleaseLock(&thread_lock);
+    HashEntry* entry = metadata->get((unsigned long) addr);
+    if (entry != NULL){
+      if (!entry->has_read((int) threadid) && (int)threadid != (entry->last_writer).threadid)
+	{
+            PIN_GetLock(&thread_lock, threadid+1);
+            entry->add_reader((unsigned long) ip, threadid, 0);
+            PIN_ReleaseLock(&thread_lock);
+        }
+    }
 }
 
 // Print a memory write record
 VOID RecordMemWrite(VOID * ip, VOID * addr, THREADID threadid)
 {
-    if (metadata->get((long) ip) != NULL){}
+    HashEntry* entry = metadata->get((unsigned long) addr);
+    if (entry != NULL){
+        if ((entry -> last_writer).threadid != (int) threadid)
+	{
+	    PIN_GetLock(&thread_lock, threadid+1);
+            metadata->print_edges(entry);
+	    entry->update_writer((unsigned long) ip, (int) threadid, 0);
+	    PIN_ReleaseLock(&thread_lock);
+        }
+    }
     else{
         PIN_GetLock(&thread_lock, threadid+1);
-        HashEntry* write = new HashEntry((int) threadid, 0);
-        metadata->put((long) ip, write);
+        HashEntry* write = new HashEntry((unsigned long) ip,(int) threadid, 0);
+        metadata->put((unsigned long) addr, write);
         PIN_ReleaseLock(&thread_lock);
     }
 }
@@ -186,6 +237,11 @@ INT32 Usage()
     return -1;
 }
 
+VOID Fini(INT32 code, VOID* v){
+    metadata->print_table();
+    metadata->close_stream();
+}
+
 /* ===================================================================== */
 /* Main                                                                  */
 /* ===================================================================== */
@@ -199,14 +255,12 @@ int main(int argc, char * argv[])
     // Initialize pin
     if (PIN_Init(argc, argv)) return Usage();
 
-    trace_stream.open("read_write.out");
     // Register ImageLoad to be called when an image is loaded
     IMG_AddInstrumentFunction(ImageLoad, 0);
+    PIN_AddFiniFunction(Fini, 0);
 
     // Start the program, never returns
     PIN_StartProgram();
     
-    metadata->print();
-    trace_stream.close();
     return 0;
 }
