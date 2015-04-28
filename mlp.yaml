@@ -1,6 +1,6 @@
 !obj:pylearn2.train.Train {
     dataset: &train !obj:pylearn2.datasets.csv_dataset.CSVDataset {
-      path: './train.csv',
+      path: './results2.csv',
       task: 'classification',
       expect_labels: True,
       expect_headers: False,
@@ -22,7 +22,7 @@
         nvis: 10,
     },
     algorithm: !obj:pylearn2.training_algorithms.sgd.SGD {
-        batch_size: 5 ,
+        batch_size: 100 ,
         learning_rate: .1,
         monitoring_dataset:
             {

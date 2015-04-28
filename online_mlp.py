@@ -11,8 +11,8 @@ class MLPData(DenseDesignMatrix):
     super(MLPData, self).__init__(X=X, y=y.astype(int), y_labels=2)
 
 threshold = 0.95
-hidden_layer = mlp.Sigmoid(layer_name='h0', dim=10, sparse_init=7)
-output_layer = mlp.Softmax(layer_name='y', n_classes=2, irange=0.5)
+hidden_layer = mlp.Sigmoid(layer_name='h0', dim=10, sparse_init=10)
+output_layer = mlp.Softmax(layer_name='y', n_classes=2, irange=0.05)
 layers = [hidden_layer, output_layer]
 neural_net = mlp.MLP(layers, nvis=10)
 trainer = sgd.SGD(batch_size=5, learning_rate=.1, termination_criterion=EpochCounter(100))
@@ -22,7 +22,7 @@ learning = True
 correct = 0
 incorrect = 0
 total = 0
-data = CSVData("train.csv")
+data = CSVData("results2.csv")
 while True:
   X, y = data.get_data()
   if(X == None):
