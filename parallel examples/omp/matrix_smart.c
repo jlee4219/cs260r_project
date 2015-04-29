@@ -46,7 +46,6 @@ for (i = 0; i < N; ++i) {
   for (i = 0; i < N; ++i) {
     for (j = 0; j < N; ++j) {
       for (k = 0; k < N; ++k) {
-        // atomicity violation
         c = C1[i][j];
         c += B[k][j] * A[i][k];
         C1[i][j] =  c;
