@@ -83,7 +83,7 @@ def get_data(filename):
     gen_dependencies("traces", None, None, 10, False)
 
 def run():
-  X, decoding = get_data(csvfile)
+  X, decoding = gen_dependencies("traces", None, None, 10, False)
   count = len(targets)
   split = float(1)/2
   X_train = np.array(X[:int(count*split)])
