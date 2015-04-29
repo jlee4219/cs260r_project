@@ -4,13 +4,12 @@
 
 FILE * trace;
 PIN_LOCK lock;
-VOID* min_ip = NULL;
 
 // Print a memory read record
 VOID RecordMemRead(VOID * ip, VOID * addr, THREADID threadid)
 {
     PIN_GetLock(&lock, threadid+1);
-    fprintf(trace,"%d R %d\n", (int)min_ip - (int)ip, (int)addr);
+    fprintf(trace,"%d R %d\n", (long)ip, (long)addr);
     fflush(trace);
     PIN_ReleaseLock(&lock);
 }
@@ -19,7 +18,7 @@ VOID RecordMemRead(VOID * ip, VOID * addr, THREADID threadid)
 VOID RecordMemWrite(VOID * ip, VOID * addr, THREADID threadid)
 {
     PIN_GetLock(&lock, threadid+1);
-    fprintf(trace,"%d W %d\n", (int)min_ip - (int)ip, (int)addr);
+    fprintf(trace,"%d W %d\n", (long)ip, (long)addr);
     fflush(trace);
     PIN_ReleaseLock(&lock);
 }
@@ -52,10 +51,6 @@ VOID ImageLoad(IMG img, VOID *v)
                 
                 for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
                 {
-		    if (ins == RTN_InsHead(rtn))
-                    {
-		      min_ip = (VOID *)INS_Address(ins);
-                    }
                     UINT32 memOperands = INS_MemoryOperandCount(ins);
 
                     // Iterate over each memory operand of the instruction.
