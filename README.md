@@ -2,8 +2,8 @@
 
 To use:
 
-1. Download pin.
-2. Move traces2.py, rfc2.py, and new_read_write.cpp to pin-.../source/tools/ManualExamples/
+1. Download [pin](https://software.intel.com/en-us/articles/pin-a-dynamic-binary-instrumentation-tool).
+2. Move traces2.py, rfc2.py, your program, and new_read_write.cpp to pin-.../source/tools/ManualExamples/
 
 If on a 64-bit Mac:
 
@@ -20,3 +20,5 @@ make obj-ia32/new_read_write.so TARGET=ia32
 4. mkdir traces
 5. python traces2.py program traces
 6. python rfc2.py
+
+There are a number of example programs in the parallel examples folder.
