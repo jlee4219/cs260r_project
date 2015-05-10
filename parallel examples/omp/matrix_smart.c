@@ -5,7 +5,7 @@
 #include <time.h>
 
 
-#define N 100
+#define N 4
 int A[N][N], B[N][N];
 int C[N][N], C1[N][N];
 int main(void) {
@@ -42,16 +42,18 @@ for (i = 0; i < N; ++i) {
     }
   }
 
-#pragma omp parallel for private(k, c)
-  for (i = 0; i < N; ++i) {
+// put the k loop on the outside
+#pragma omp parallel for private(c)
+  for (k = 0; k < N; ++k) {
     for (j = 0; j < N; ++j) {
-      for (k = 0; k < N; ++k) {
+      for (i = 0; i < N; ++i) {
         c = C1[i][j];
         c += B[k][j] * A[i][k];
         C1[i][j] =  c;
       }
     }
   }
+
   End = omp_get_wtime();
   printf("---- Parallel done in %f seconds.\n", End - Start);
   printf("---- Check\n");
