@@ -35,9 +35,9 @@ int main ( int argc, char *argv[] )
   The value FACTOR is chosen so that the correct value of the dot product
   of X and Y is N.
 */
-  n = 10000;
+  n = 10;
 
-  while ( n < 100000000 )
+  while ( n < 100 )
   {
     n = n * 10;
 
