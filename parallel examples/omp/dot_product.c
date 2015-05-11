@@ -18,8 +18,10 @@ int main ( int argc, char *argv[] )
   int *x;
   int xdoty;
   int *y;
+  omp_set_dynamic(0);
+  omp_set_num_threads(2);
 
-  printf ( "\n" );
+  /*printf ( "\n" );
   printf ( "DOT_PRODUCT\n" );
   printf ( "  C/OpenMP version\n" );
   printf ( "\n" );
@@ -28,7 +30,7 @@ int main ( int argc, char *argv[] )
   printf ( "\n" );
   printf ( "  Number of processors available = %d\n", omp_get_num_procs ( ) );
   printf ( "  Number of threads =              %d\n", omp_get_max_threads ( ) );
-/*
+
   Set up the vector data.
   N may be increased to get better timing data.
 
@@ -37,7 +39,7 @@ int main ( int argc, char *argv[] )
 */
   n = 10;
 
-  while ( n < 100 )
+  while ( n < 150000 )
   {
     n = n * 10;
 
@@ -54,7 +56,7 @@ int main ( int argc, char *argv[] )
       y[i] = ( i + 1 ) % 7;
     }
 
-    printf ( "\n" );
+    // printf ( "\n" );
 /*
   Test #1
 */
@@ -64,7 +66,7 @@ int main ( int argc, char *argv[] )
 
     wtime = omp_get_wtime ( ) - wtime;
 
-    printf ( "  Sequential  %8d  %8d  %15.10f\n", n, xdoty1, wtime );
+    // printf ( "  Sequential  %8d  %8d  %15.10f\n", n, xdoty1, wtime );
 /*
   Test #2
 */
@@ -74,7 +76,7 @@ int main ( int argc, char *argv[] )
 
     wtime = omp_get_wtime ( ) - wtime;
 
-    printf ( "  Parallel    %8d  %8d  %15.10f\n", n, xdoty2, wtime );
+    // printf ( "  Parallel    %8d  %8d  %15.10f\n", n, xdoty2, wtime );
 
     assert(xdoty1==xdoty2);
 

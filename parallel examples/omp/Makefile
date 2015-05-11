@@ -1,6 +1,6 @@
 
 COMPILE=gcc-4.9
-FLAGS=-fopenmp -std=c99
+FLAGS=-fopenmp -std=c99 -g
 
 
 make:
