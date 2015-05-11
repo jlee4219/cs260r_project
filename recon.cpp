@@ -105,8 +105,10 @@ public:
         NODE* reader = new NODE(ins_p, t_id, stamp);
         reader->next = sharers_list;
         sharers_list = reader;
-        Context* ct = get_tls(last_writer.threadid);
-        ct->add(RMT_R);
+        if (last_writer.threadid != -1){
+            Context* ct = get_tls(last_writer.threadid);
+            ct->add(RMT_R);
+        }
     }
 
     bool has_read(int t_id){
@@ -199,6 +201,13 @@ VOID RecordMemRead(VOID * ip, VOID * addr, THREADID threadid)
             PIN_ReleaseLock(&thread_lock);
         }
     }
+    /*else{
+        PIN_GetLock(&thread_lock, threadid+1);
+        HashEntry* uninit = new HashEntry((unsigned long)0, (int)threadid, count);
+	uninit->add_reader((unsigned long) ip, threadid, count);
+        metadata->put((unsigned long) addr, uninit);
+        PIN_ReleaseLock(&thread_lock);
+	}*/
     count += 1;
 }
 

@@ -54,5 +54,5 @@ def build_recon(edge, outdir, N):
       nonbuggy += 1 
     # with open(filename, 'rb') as f: 
 
-for edge in buggy_freq_ratio("./test1_traces", 200):
-  print edge
+# for edge in buggy_freq_ratio("./test1_traces", 200):
+  # print edge

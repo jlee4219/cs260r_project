@@ -10,4 +10,4 @@ def reconstruct(edge, filename):
   print source_line
   print sink_line
 
-reconstruct(features.buggy_freq_ratio("./test1_traces",200)[-1], "test1")
+# reconstruct(features.buggy_freq_ratio("./test1_traces",200)[-1], "test1")
