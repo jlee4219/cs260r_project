@@ -17,17 +17,57 @@
 int count = 0;
 static TLS_KEY tls_key;
 
+struct ins_type {
+    short type;
+    ins_type* next;
+    ins_type* prev;
+};
+
+class Context {
+private:
+    ins_type* head;
+public:
+    Context() {
+        head = (ins_type*) malloc(sizeof(ins_type) * CTXT_L);
+        for (int i = 0; i < CTXT_L; ++i){
+            (head+i)->next = head + ((i + 1) % CTXT_L);
+            (head+i)->prev = head + ((CTXT_L - 1) % CTXT_L);
+            (head+i)->type = -1;
+        }
+    }
+
+    void add(short type){
+        head = head -> prev;
+        head->type = type;
+    }
+
+    int to_int(){
+        ins_type* cur = head;
+        int accum = 0;
+        for (int i = 0; i < CTXT_L; ++i){
+	    accum *= 4;
+            if (cur -> type != -1)
+	        accum += cur -> type;
+        }
+        return accum;
+    }
+};
+
+Context* get_tls(THREADID threadid)
+{
+    Context* ctxt = static_cast<Context*>(PIN_GetThreadData(tls_key, threadid));
+    return ctxt;
+}
+
 // class for a node in context-aware communication graph
 class NODE{
 public:
     unsigned long ip;
-    int context;
     int threadid;
     int time_stamp;
     NODE* next;
-    NODE(unsigned long ins_p, int t_id, int stamp, int ctxt){
+    NODE(unsigned long ins_p, int t_id, int stamp){
         ip = ins_p;
-        context = ctxt;
         threadid = t_id;
         time_stamp = stamp;
         next = NULL;
@@ -39,19 +79,35 @@ public:
     NODE last_writer;
     NODE* sharers_list;
 
-  void update_writer(unsigned long ins_p, int t_id, int stamp, int ctxt) {
+    void update_writer(unsigned long ins_p, int t_id, int stamp) {
         last_writer.ip = ins_p;
         last_writer.threadid = t_id;
         last_writer.time_stamp = stamp;
-        last_writer.context = ctxt;
-        sharers_list = NULL;
+        NODE* cur = sharers_list;
+        while(cur != NULL){
+	    Context* ct = get_tls(cur->threadid);
+            ct->add(RMT_W);
+            cur = cur->next;
+        }
         count += 1;
     }
 
-  void add_reader(unsigned long ins_p, int t_id, int stamp, int ctxt) {
-    NODE* reader = new NODE(ins_p, t_id, stamp, ctxt);
+    void clear_sharers() {
+        NODE* cur = sharers_list;
+        while(cur != NULL){
+            NODE* next = cur->next;
+            delete cur;
+            cur = next;
+        }
+        sharers_list = NULL;
+    }
+
+    void add_reader(unsigned long ins_p, int t_id, int stamp) {
+        NODE* reader = new NODE(ins_p, t_id, stamp);
         reader->next = sharers_list;
         sharers_list = reader;
+        Context* ct = get_tls(last_writer.threadid);
+        ct->add(RMT_R);
         count += 1;
     }
 
@@ -65,8 +121,8 @@ public:
         return false;
     }
 
-  HashEntry(unsigned long ins_p, int t_id, int stamp, int ctxt):
-    last_writer(ins_p, t_id, stamp, ctxt), sharers_list(NULL) { }
+  HashEntry(unsigned long ins_p, int t_id, int stamp):
+    last_writer(ins_p, t_id, stamp), sharers_list(NULL) { }
 };
 
 class HashMap {
@@ -108,11 +164,13 @@ public:
     }
 
     void print_node(NODE* node){
-      trace_stream << node->ip << " " << node->threadid << " " << node->time_stamp << " " << node->context;
+        trace_stream << node->ip << " " << node->threadid << " " << node->time_stamp << " ";
+        Context* ctxt = get_tls(node->threadid);
+        trace_stream << ctxt->to_int();
     }
 
     void close_stream(){
-      trace_stream.close();
+        trace_stream.close();
     }
 
     ~HashMap() {
@@ -123,48 +181,6 @@ public:
         delete[] table;
     }
 };
-
-struct ins_type {
-  short type;
-  ins_type* next;
-  ins_type* prev;
-};
-
-class Context {
-private:
-    ins_type* head;
-public:
-    Context() {
-        head = (ins_type*) malloc(sizeof(ins_type) * CTXT_L);
-        for (int i = 0; i < CTXT_L; ++i){
-            (head+i)->next = head + ((i + 1) % CTXT_L);
-            (head+i)->prev = head + ((CTXT_L - 1) % CTXT_L);
-            (head+i)->type = -1;
-        }
-    }
-
-    void add(short type){
-        head = head -> prev;
-        head->type = type;
-    }
-
-    int to_int(){
-        ins_type* cur = head;
-        int accum = 0;
-        for (int i = 0; i < CTXT_L; ++i){
-	    accum *= 4;
-            if (cur -> type != -1)
-	        accum += cur -> type;
-        }
-        return accum;
-    }
-};
-
-Context* get_tls(THREADID threadid)
-{
-    Context* ctxt = static_cast<Context*>(PIN_GetThreadData(tls_key, threadid));
-    return ctxt;
-}
 
 // FILE * trace;
 PIN_LOCK thread_lock;
@@ -180,7 +196,7 @@ VOID RecordMemRead(VOID * ip, VOID * addr, THREADID threadid)
       if (!entry->has_read((int) threadid) && (int)threadid != (entry->last_writer).threadid)
 	{
             PIN_GetLock(&thread_lock, threadid+1);
-            entry->add_reader((unsigned long) ip, threadid, count, ctxt->to_int());
+            entry->add_reader((unsigned long) ip, threadid, count);
             PIN_ReleaseLock(&thread_lock);
         }
     }
@@ -197,13 +213,14 @@ VOID RecordMemWrite(VOID * ip, VOID * addr, THREADID threadid)
 	{
 	    PIN_GetLock(&thread_lock, threadid+1);
             metadata->print_edges(entry);
-	    entry->update_writer((unsigned long) ip, (int) threadid, count, ctxt->to_int());
+	    entry->update_writer((unsigned long) ip, (int) threadid, count);
+            entry->clear_sharers();
 	    PIN_ReleaseLock(&thread_lock);
         }
     }
     else{
         PIN_GetLock(&thread_lock, threadid+1);
-        HashEntry* write = new HashEntry((unsigned long) ip,(int) threadid, count, ctxt->to_int());
+        HashEntry* write = new HashEntry((unsigned long) ip,(int) threadid, count);
         metadata->put((unsigned long) addr, write);
         PIN_ReleaseLock(&thread_lock);
     }
