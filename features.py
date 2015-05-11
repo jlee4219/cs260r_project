@@ -26,7 +26,7 @@ def buggy_freq_ratio(outdir, N):
         source = words[:2]+words[3:4]
         sinks = words[4:]
         for i in range(len(sinks)/4):
-          key = str(source) + str(sinks[4*i:4*i+2]+sinks[4*i+3:4*(i+1)])
+          key = str(source)+" "+str(sinks[4*i:4*i+2]+sinks[4*i+3:4*(i+1)])
           if key in counts:
             counts[key][bad] += 1
           else:

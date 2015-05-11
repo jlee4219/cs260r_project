@@ -4,17 +4,14 @@
 #include <assert.h>
 
 
-int* sand_castle;
+int* sand_castle = NULL;
 
 
 void* make_sand_castle (void* arg) {
 
   // bide our time
   int j;
-  for (int i = 0; i < 100; ++i)
-  {
-    j = i * i;
-  }
+  j = 1;
 
   // then return our reciprocal
   sand_castle = &j;
@@ -39,6 +36,7 @@ int main () {
   pthread_create(threads+i, NULL, &make_sand_castle, NULL);
 
   i += 1;
+  usleep(10);
   pthread_create(threads+i, NULL, &plus_one, NULL);
 
   for(i = 0; i < 2; ++i){
