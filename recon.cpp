@@ -89,7 +89,6 @@ public:
             ct->add(RMT_W);
             cur = cur->next;
         }
-        count += 1;
     }
 
     void clear_sharers() {
@@ -108,7 +107,6 @@ public:
         sharers_list = reader;
         Context* ct = get_tls(last_writer.threadid);
         ct->add(RMT_R);
-        count += 1;
     }
 
     bool has_read(int t_id){
@@ -164,7 +162,8 @@ public:
     }
 
     void print_node(NODE* node){
-        trace_stream << node->ip << " " << node->threadid << " " << node->time_stamp << " ";
+        trace_stream << hex << node->ip << dec; 
+        trace_stream << " " << node->threadid << " " << node->time_stamp << " ";
         Context* ctxt = get_tls(node->threadid);
         trace_stream << ctxt->to_int();
     }
@@ -200,6 +199,7 @@ VOID RecordMemRead(VOID * ip, VOID * addr, THREADID threadid)
             PIN_ReleaseLock(&thread_lock);
         }
     }
+    count += 1;
 }
 
 // Print a memory write record
@@ -224,6 +224,7 @@ VOID RecordMemWrite(VOID * ip, VOID * addr, THREADID threadid)
         metadata->put((unsigned long) addr, write);
         PIN_ReleaseLock(&thread_lock);
     }
+    count += 1;
 }
 
 // Set the minimum instruction pointer
@@ -244,6 +245,7 @@ VOID ImageLoad(IMG img, VOID *v)
     if(!IMG_IsMainExecutable(img))
         return;
     else {
+        // cout << (unsigned long)IMG_LowAddress(img) << endl; 
         for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec))
         { 
             for (RTN rtn = SEC_RtnHead(sec); RTN_Valid(rtn); rtn = RTN_Next(rtn))
