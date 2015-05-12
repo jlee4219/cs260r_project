@@ -42,7 +42,7 @@ def test():
   print "Calculating features..."
   edges = features.buggy_freq_ratio(outdir, N)
   print "Reconstructing..."
-  reconstruct.reconstruct(edges[-1], filename, outdir, N)
+  reconstruct.reconstruct(edges[-2], filename, outdir, N)
 
 run()
 # test()
