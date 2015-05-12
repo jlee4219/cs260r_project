@@ -5,12 +5,14 @@
 #include <time.h>
 
 
-#define N 4
+#define N 10
 int A[N][N], B[N][N];
 int C[N][N], C1[N][N];
 int main(void) {
   int i, j, k;
   double Start, End;
+  omp_set_dynamic(0);
+  omp_set_num_threads(2);
 
   srand((int)time(NULL));
   for (i = 0; i < N; ++i) {
@@ -19,7 +21,7 @@ int main(void) {
       B[i][j] = rand() % 100;
     }
   }
-  printf("---- Serial\n");
+  // printf("---- Serial\n");
   Start = omp_get_wtime();
   for (i = 0; i < N; ++i) {
     for (j = 0; j < N; ++j) {
@@ -31,8 +33,8 @@ int main(void) {
     }
   }
   End = omp_get_wtime();
-  printf("---- Serial done in %f seconds.\n", End - Start);
-  printf("---- Parallel\n");
+  //printf("---- Serial done in %f seconds.\n", End - Start);
+  //printf("---- Parallel\n");
   Start = omp_get_wtime();
 
 int c;
@@ -55,13 +57,13 @@ for (i = 0; i < N; ++i) {
   }
 
   End = omp_get_wtime();
-  printf("---- Parallel done in %f seconds.\n", End - Start);
-  printf("---- Check\n");
+  // printf("---- Parallel done in %f seconds.\n", End - Start);
+  // printf("---- Check\n");
   for (i = 0; i < N; i++) {
     for (j = 0; j < N; j++) {
       assert (C[i][j] == C1[i][j]);
     }
   }
-  printf("Passed\n");
+  // printf("Passed\n");
   return 0;
 }
