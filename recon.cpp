@@ -170,6 +170,14 @@ public:
         trace_stream << ctxt->to_int();
     }
 
+    void mark_overwrite(){
+        trace_stream << " * ";
+    }
+
+    void new_line(){
+        trace_stream << endl;
+    }
+
     void close_stream(){
         trace_stream.close();
     }
@@ -222,7 +230,11 @@ VOID RecordMemWrite(VOID * ip, VOID * addr, THREADID threadid)
 	{
 	    PIN_GetLock(&thread_lock, threadid+1);
             metadata->print_edges(entry);
+            metadata->print_node(&(entry->last_writer));
+            metadata->mark_overwrite();
 	    entry->update_writer((unsigned long) ip, (int) threadid, count);
+            metadata->print_node(&(entry->last_writer));
+            metadata->new_line();
             entry->clear_sharers();
 	    PIN_ReleaseLock(&thread_lock);
         }

@@ -5,6 +5,15 @@ def reconstruct(edge, filename, outdir, N):
   output = edge[0].split()
   source = output[0][2:-2]
   sink = output[3][2:-2]
+
+  # determine if overwrite or read
+  overwrite = output[-1]
+  if overwrite == "*":
+    note = "Overwrite from"
+    edge = (edge[0][:-3], edge[1])
+  else:
+    note = "Read from"
+
   source_line = get_line(filename, source)
   sink_line = get_line(filename, sink)
   for node, write in get_body(edge, outdir, N, 1).iteritems():
@@ -12,7 +21,7 @@ def reconstruct(edge, filename, outdir, N):
   print "Write from", source_line
   for node, write in get_body(edge, outdir, N, 0).iteritems():
     print_node(filename, node, write)
-  print "Read from", sink_line
+  print note, sink_line
   for node, write in get_body(edge, outdir, N, -1).iteritems():
     print_node(filename, node, write)
 
@@ -58,12 +67,20 @@ def get_body_for_file(edge, f, get_prev):
   prev = {}
   suff = {}
   for line in f:
+    overwrite = 1
     words = line.split()
     if len(words) > 4:
       source = words[:4]
-      sinks = words[4:]
+
+      # check whether edge is a read or an overwrite
+      if len(words) % 4 == 0:
+        sinks = words[4:]
+      else:
+        sinks = words[5:]
+        overwrite = 0
+
       src_time = source[2]
-      max_time = max(max_time, src_time)
+      max_time = max(max_time, int(src_time))
       if src_time in times:
         times[src_time].append((source[0], 0))
       else:
@@ -72,15 +89,15 @@ def get_body_for_file(edge, f, get_prev):
         src = source[:2]+source[3:]
         snk = sinks[4*i:4*i+2]+sinks[4*i+3:4*(i+1)]
         snk_time = sinks[4*i+2]
-        max_time = max(max_time, snk_time)
+        max_time = max(max_time, int(snk_time))
         key = str(src)+" "+str(snk)
         if key == edge[0]:
           edge_src_time = src_time
           edge_snk_time = snk_time
         if snk_time in times:
-          times[snk_time].append((sinks[4*i],1))
+          times[snk_time].append((sinks[4*i],overwrite))
         else:
-          times[snk_time] = [(sinks[4*i],1)]
+          times[snk_time] = [(sinks[4*i],overwrite)]
   if edge_src_time != None and edge_snk_time != None:
     for i in range(int(edge_src_time)+1, int(edge_snk_time)):
       if str(i) in times:
@@ -97,13 +114,14 @@ def get_body_for_file(edge, f, get_prev):
         time -= 1
     if get_prev == -1:
       suff_count = 0
-      time = int(edge_snk_time) + 1
-      while(time <= max_time and suff_count < 5):
-        if str(time) in times:
-          for node in times[str(time)]:
+      suff_time = int(edge_snk_time) + 1
+      while(suff_time < max_time and suff_count < 5):
+        # print time
+        if str(suff_time) in times:
+          for node in times[str(suff_time)]:
             suff[node[0]] = node[1]
             suff_count += 1
-        time -= 1
+        suff_time += 1
   if get_prev == 1:
     return prev
   elif get_prev == -1:

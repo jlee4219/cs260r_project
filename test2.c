@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <assert.h>
-#define NUM_THREADS 20
-#define NUM_INC 800
+#define NUM_THREADS 2
+#define NUM_INC 100000
 
 int count = 0;
 

@@ -8,6 +8,14 @@ def get_last(filename):
     last = f.readline()
   return last
 
+def find_failed(outdir, N):
+  failed = []
+  for i in range(N):
+    filename = outdir + "/trace" + str(i) + ".out"
+    if len(get_last(filename).split()) < 2:
+      failed.append(i)
+  print failed
+
 def buggy_freq_ratio(outdir, N):
   counts = {}
   buggy = 0
@@ -24,9 +32,16 @@ def buggy_freq_ratio(outdir, N):
       for line in f:
         words = line.split()
         source = words[:2]+words[3:4]
-        sinks = words[4:]
+        
+        # check if a read or an overwrite
+        if len(words) % 4 == 0:
+          sinks = words[4:]
+          overwrite = ""
+        else:
+          sinks = words[5:]
+          overwrite = " *"
         for i in range(len(sinks)/4):
-          key = str(source)+" "+str(sinks[4*i:4*i+2]+sinks[4*i+3:4*(i+1)])
+          key = str(source)+" "+str(sinks[4*i:4*i+2]+sinks[4*i+3:4*(i+1)])+overwrite
           if key in counts:
             counts[key][bad] += 1
           else:
@@ -56,3 +71,4 @@ def build_recon(edge, outdir, N):
 
 # for edge in buggy_freq_ratio("./test1_traces", 200):
   # print edge
+# find_failed("./test2_traces", 50)

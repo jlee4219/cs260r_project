@@ -29,7 +29,6 @@ else:
   obj = "obj-intel64"
 
 def run():
-  print outdir 
   os.mkdir(outdir)
   print "Generating traces..."
   traces2.gen_traces(outdir, filetype, obj, N)
@@ -42,7 +41,13 @@ def test():
   print "Calculating features..."
   edges = features.buggy_freq_ratio(outdir, N)
   print "Reconstructing..."
-  reconstruct.reconstruct(edges[-2], filename, outdir, N)
+  reconstruct.reconstruct(edges[-1], filename, outdir, N)
 
-run()
-# test()
+def make_traces():
+  os.mkdir(outdir)
+  print "Generating traces..."
+  traces2.gen_traces(outdir, filetype, obj, N)
+
+# make_traces()
+# run()
+test()
